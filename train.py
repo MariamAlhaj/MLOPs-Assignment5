@@ -11,17 +11,13 @@ def train():
     username = os.environ.get("MLFLOW_TRACKING_USERNAME")
     password = os.environ.get("MLFLOW_TRACKING_PASSWORD")
 
-    print(f"Tracking URI: {tracking_uri}")
-    print(f"Username: {username}")
-    print(f"Password set: {'yes' if password else 'NO - MISSING!'}")
+    # Embed credentials directly into the tracking URI
+    # https://username:password@dagshub.com/...
+    uri_with_creds = tracking_uri.replace("https://", f"https://{username}:{password}@")
+    mlflow.set_tracking_uri(uri_with_creds)
 
-    # Set credentials via environment for MLflow
-    os.environ["MLFLOW_TRACKING_USERNAME"] = username or ""
-    os.environ["MLFLOW_TRACKING_PASSWORD"] = password or ""
+    mlflow.set_experiment("assignment5")
 
-    mlflow.set_tracking_uri(tracking_uri)
-
-    # Load data
     iris = load_iris()
     X, y = iris.data, iris.target
     X_train, X_test, y_train, y_test = train_test_split(

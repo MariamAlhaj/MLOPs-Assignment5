@@ -2,27 +2,22 @@ import mlflow
 import os
 import sys
 
-ACCURACY_THRESHOLD = 0.80
+ACCURACY_THRESHOLD = 0.85
 
 def check_threshold():
-    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    username = os.environ.get("MLFLOW_TRACKING_USERNAME")
+    password = os.environ.get("MLFLOW_TRACKING_PASSWORD")
 
-    # Read the Run ID from model_info.txt
-    model_info_path = "model_info.txt"
-    if not os.path.exists(model_info_path):
-        print("ERROR: model_info.txt not found.")
-        sys.exit(1)
+    # Embed credentials directly into the tracking URI
+    uri_with_creds = tracking_uri.replace("https://", f"https://{username}:{password}@")
+    mlflow.set_tracking_uri(uri_with_creds)
 
-    with open(model_info_path, "r") as f:
+    with open("model_info.txt", "r") as f:
         run_id = f.read().strip()
-
-    if not run_id:
-        print("ERROR: model_info.txt is empty.")
-        sys.exit(1)
 
     print(f"Checking MLflow Run ID: {run_id}")
 
-    # Fetch the run from MLflow
     client = mlflow.tracking.MlflowClient()
     try:
         run = client.get_run(run_id)
@@ -31,10 +26,6 @@ def check_threshold():
         sys.exit(1)
 
     accuracy = run.data.metrics.get("accuracy")
-    if accuracy is None:
-        print("ERROR: 'accuracy' metric not found in MLflow run.")
-        sys.exit(1)
-
     print(f"Model accuracy: {accuracy:.4f} (threshold: {ACCURACY_THRESHOLD})")
 
     if accuracy < ACCURACY_THRESHOLD:
