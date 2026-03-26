@@ -7,6 +7,10 @@ from sklearn.metrics import accuracy_score
 import pickle
 
 def train():
+    # Explicitly set DagsHub authentication
+    os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ.get("MLFLOW_TRACKING_USERNAME", "")
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ.get("MLFLOW_TRACKING_PASSWORD", "")
+    
     mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     mlflow.set_experiment("assignment5")
 
@@ -18,20 +22,16 @@ def train():
     )
 
     with mlflow.start_run() as run:
-        # Train model
         clf = RandomForestClassifier(n_estimators=100, random_state=42)
         clf.fit(X_train, y_train)
 
-        # Evaluate
         y_pred = clf.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
 
-        # Log to MLflow
         mlflow.log_param("n_estimators", 100)
         mlflow.log_param("random_state", 42)
         mlflow.log_metric("accuracy", accuracy)
 
-        # Save model artifact
         with open("model.pkl", "wb") as f:
             pickle.dump(clf, f)
         mlflow.log_artifact("model.pkl")
@@ -39,7 +39,6 @@ def train():
         print(f"Accuracy: {accuracy:.4f}")
         print(f"Run ID: {run.info.run_id}")
 
-        # Write model_info.txt with the Run ID
         with open("model_info.txt", "w") as f:
             f.write(run.info.run_id)
 
