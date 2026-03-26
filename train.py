@@ -1,5 +1,6 @@
 import mlflow
 import os
+import dagshub
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -7,14 +8,16 @@ from sklearn.metrics import accuracy_score
 import pickle
 
 def train():
-    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     username = os.environ.get("MLFLOW_TRACKING_USERNAME")
     password = os.environ.get("MLFLOW_TRACKING_PASSWORD")
 
-    # Embed credentials directly into the tracking URI
-    # https://username:password@dagshub.com/...
-    uri_with_creds = tracking_uri.replace("https://", f"https://{username}:{password}@")
-    mlflow.set_tracking_uri(uri_with_creds)
+    # Use dagshub init for authentication
+    dagshub.auth.add_app_token(password)
+    dagshub.init(
+        repo_owner=username,
+        repo_name="MLOPs-Assignment5",
+        mlflow=True
+    )
 
     mlflow.set_experiment("assignment5")
 

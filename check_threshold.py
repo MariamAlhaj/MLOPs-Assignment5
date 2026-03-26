@@ -1,17 +1,20 @@
 import mlflow
 import os
 import sys
+import dagshub
 
 ACCURACY_THRESHOLD = 0.85
 
 def check_threshold():
-    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     username = os.environ.get("MLFLOW_TRACKING_USERNAME")
     password = os.environ.get("MLFLOW_TRACKING_PASSWORD")
 
-    # Embed credentials directly into the tracking URI
-    uri_with_creds = tracking_uri.replace("https://", f"https://{username}:{password}@")
-    mlflow.set_tracking_uri(uri_with_creds)
+    dagshub.auth.add_app_token(password)
+    dagshub.init(
+        repo_owner=username,
+        repo_name="MLOPs-Assignment5",
+        mlflow=True
+    )
 
     with open("model_info.txt", "r") as f:
         run_id = f.read().strip()
