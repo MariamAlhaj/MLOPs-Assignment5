@@ -7,12 +7,19 @@ from sklearn.metrics import accuracy_score
 import pickle
 
 def train():
-    # Explicitly set DagsHub authentication
-    os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ.get("MLFLOW_TRACKING_USERNAME", "")
-    os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ.get("MLFLOW_TRACKING_PASSWORD", "")
-    
-    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
-    mlflow.set_experiment("assignment5")
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    username = os.environ.get("MLFLOW_TRACKING_USERNAME")
+    password = os.environ.get("MLFLOW_TRACKING_PASSWORD")
+
+    print(f"Tracking URI: {tracking_uri}")
+    print(f"Username: {username}")
+    print(f"Password set: {'yes' if password else 'NO - MISSING!'}")
+
+    # Set credentials via environment for MLflow
+    os.environ["MLFLOW_TRACKING_USERNAME"] = username or ""
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = password or ""
+
+    mlflow.set_tracking_uri(tracking_uri)
 
     # Load data
     iris = load_iris()
