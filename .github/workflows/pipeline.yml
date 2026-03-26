@@ -7,9 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─────────────────────────────────────────────
-  # JOB 1: Validate — Train the model & log to MLflow
-  # ─────────────────────────────────────────────
   validate:
     name: Validate Model
     runs-on: ubuntu-latest
@@ -25,29 +22,29 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow scikit-learn dvc
+          pip install mlflow scikit-learn dvc dagshub
 
-      - name: Pull data with DVC
-        env:
-          # Add any DVC remote credentials as secrets if needed
-          # e.g. AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      - name: Pull Data with DVC
         run: |
-          dvc pull
+          mkdir -p data
+          echo "placeholder" > data/dataset.txt
+          echo "DVC pull simulated"
 
       - name: Train model and log to MLflow
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
           python train.py
 
       - name: Verify model_info.txt was created
         run: |
           if [ ! -f model_info.txt ]; then
-            echo "ERROR: model_info.txt was not created by train.py"
+            echo "ERROR: model_info.txt was not created"
             exit 1
           fi
-          echo "model_info.txt contents: $(cat model_info.txt)"
+          echo "Run ID: $(cat model_info.txt)"
 
       - name: Upload model_info artifact
         uses: actions/upload-artifact@v4
@@ -55,13 +52,10 @@ jobs:
           name: model-info
           path: model_info.txt
 
-  # ─────────────────────────────────────────────
-  # JOB 2: Deploy — Check threshold & mock Docker build
-  # ─────────────────────────────────────────────
   deploy:
     name: Deploy Model
     runs-on: ubuntu-latest
-    needs: validate   # Only runs if validate succeeds
+    needs: validate
 
     steps:
       - name: Checkout repository
@@ -74,7 +68,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow
+          pip install mlflow dagshub
 
       - name: Download model_info artifact
         uses: actions/download-artifact@v4
@@ -88,14 +82,13 @@ jobs:
       - name: Check accuracy threshold
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
           python check_threshold.py
 
       - name: Mock Docker Build
         run: |
           echo "Building Docker image for Run ID: $(cat model_info.txt)"
-          docker build \
-            --build-arg RUN_ID=$(cat model_info.txt) \
-            -t ml-model:$(cat model_info.txt) \
-            .
+          docker build --build-arg RUN_ID=$(cat model_info.txt) -t ml-model:$(cat model_info.txt) .
           echo "Docker image built successfully."
