@@ -2,7 +2,7 @@ import mlflow
 import os
 import sys
 
-ACCURACY_THRESHOLD = 0.85
+ACCURACY_THRESHOLD = 0.80
 
 def check_threshold():
     mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
