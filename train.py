@@ -1,0 +1,51 @@
+import mlflow
+import os
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import pickle
+
+def train():
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+    mlflow.set_experiment("assignment5")
+
+    # Load data
+    iris = load_iris()
+    X, y = iris.data, iris.target
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    with mlflow.start_run() as run:
+        # Train model
+        clf = RandomForestClassifier(n_estimators=100, random_state=42)
+        clf.fit(X_train, y_train)
+
+        # Evaluate
+        y_pred = clf.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+
+        # Log to MLflow
+        mlflow.log_param("n_estimators", 100)
+        mlflow.log_param("random_state", 42)
+        mlflow.log_metric("accuracy", accuracy)
+
+        # Save model artifact
+        with open("model.pkl", "wb") as f:
+            pickle.dump(clf, f)
+        mlflow.log_artifact("model.pkl")
+
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Run ID: {run.info.run_id}")
+
+        # Write model_info.txt with the Run ID
+        with open("model_info.txt", "w") as f:
+            f.write(run.info.run_id)
+
+        print("model_info.txt written successfully.")
+
+    return accuracy
+
+if __name__ == "__main__":
+    train()
